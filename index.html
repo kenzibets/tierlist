@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TierMaker — Local Audio & Video Tier List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+<meta property="og:title" content="Tier list">
+<meta property="og:description" content="Welcome to kenzies tierlist maker!">
+<meta property="og:image" content="https://raw.githubusercontent.com/kenzibets/kenztopia/main/static/image/Screenshot%202025-11-07%20233505.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kenzies Fridge">
+<meta name="twitter:description" content="Welcome to kenzies fridge!">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/kenzibets/kenztopia/main/static/image/Screenshot%202025-11-07%20233505.png">
+
+<link rel="icon" href="https://pngfre.com/wp-content/uploads/monster-energy-drink-37.png" />  
+  <style>
+    :root{
+      --bg-1: #071226;
+      --bg-2: #0f1a2a;
+      --muted: #94a7c3;
+      --accent-1: #6c5ce7;
+      --accent-2: #06b6d4;
+      --card-shadow: 0 10px 30px rgba(2,6,12,0.6);
+      --radius:16px;
+      --scrollbar-size:12px;
+      --tier-width:200px;
+      --header-height:82px; /* approximate header + controls height */
+      --footer-gap:20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;color:#e9f1fb;background:linear-gradient(180deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased}
+    /* Use full viewport height so scroll math is reliable */
+    body{padding:22px;overflow:hidden;height:100vh}
+
+    header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+    header h1{margin:0;font-size:18px;letter-spacing:0.4px}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
+
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{cursor:pointer;border:0;padding:10px 14px;border-radius:12px;font-weight:700;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:white;box-shadow:var(--card-shadow);}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-weight:600;box-shadow:none}
+    .btn.small{padding:8px 10px;font-size:13px}
+
+    /* Main area: set height in viewport units so child flex heights work */
+    .main{display:flex;gap:22px;margin-top:18px;height:calc(100vh - var(--header-height));align-items:flex-start;min-height:0}
+
+    /* LEFT PANEL: make a column flex with a scrollable library that can grow/shrink */
+    .left{flex:0 0 520px; width:520px; display:flex; flex-direction:column; background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:var(--radius);padding:16px;border:1px solid rgba(255,255,255,0.025);min-height:0;height:100%}
+    .left-top{display:flex;flex-direction:column;gap:12px;flex:0 0 auto}
+    .left-controls{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:0 0 auto}
+    .left-actions{display:flex;gap:8px;align-items:center}
+
+    .right{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+
+    .drop-zone{border-radius:12px;border:2px dashed rgba(255,255,255,0.03);padding:16px;text-align:center;color:var(--muted);font-size:14px}
+    input[type=file]{display:none}
+
+    .library, .tier-board, .slot-list {
+      scrollbar-gutter: stable both-edges;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* library is the scrollable area — must be able to shrink: min-height:0 and flex:1 */
+    .library{margin-top:8px;flex:1 1 auto;overflow:auto;padding-right:12px;display:flex;flex-direction:column;gap:12px;min-height:0}
+    .library::-webkit-scrollbar, .tier-board::-webkit-scrollbar, .slot-list::-webkit-scrollbar { height: var(--scrollbar-size); width: var(--scrollbar-size); }
+    .library::-webkit-scrollbar-thumb, .tier-board::-webkit-scrollbar-thumb, .slot-list::-webkit-scrollbar-thumb {
+      background:linear-gradient(180deg,#132033,#0d1b2a);
+      border-radius:12px;
+      border:3px solid transparent;
+      background-clip:padding-box;
+    }
+    .library::-webkit-scrollbar-track, .tier-board::-webkit-scrollbar-track, .slot-list::-webkit-scrollbar-track { background: transparent; }
+    .library{scrollbar-width:thin;scrollbar-color:#0d1b2a transparent}
+
+    .media-card{display:flex;gap:12px;align-items:center;padding:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));border-radius:12px;border:1px solid rgba(255,255,255,0.02);cursor:grab;transition:transform .14s ease,box-shadow .14s ease;min-width:0}
+    .media-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(4,8,14,0.6)}
+    .thumb{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:white;flex-shrink:0}
+
+    .meta{flex:1;min-width:0}
+    .title{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .info{color:var(--muted);font-size:13px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+    .actions{display:flex;gap:8px;align-items:center;flex-shrink:0;min-width:160px;justify-content:flex-end}
+    .play-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 6px;border-radius:10px;cursor:pointer;color:var(--muted);font-weight:700;min-width:72px;width:72px;text-align:center}
+    .preview-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 6px;border-radius:10px;cursor:pointer;color:var(--muted);font-weight:700;min-width:72px;width:72px;text-align:center}
+
+    .board-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .tier-board{display:flex;gap:12px;align-items:flex-start;overflow:auto;padding:10px 20px 10px 10px;min-height:0}
+    .tier-board::-webkit-scrollbar{height:var(--scrollbar-size)}
+    .tier-board::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#122035,#071226);border-radius:12px}
+
+    .tier{
+      width:var(--tier-width);
+      background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));
+      border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.02);box-shadow:0 8px 24px rgba(3,8,14,0.6);display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-height:120px;position:relative;
+    }
+
+    .tier h3{
+      margin:0;font-size:14px;color:var(--muted);letter-spacing:0.6px;position:sticky;top:8px;z-index:12;background:linear-gradient(180deg,rgba(7,18,38,0.9),rgba(7,18,38,0.9));padding:6px 8px;border-radius:8px;display:inline-block;
+    }
+
+    .slot-list{min-height:60px;display:flex;flex-direction:column;gap:8px;min-width:0;margin-top:6px;overflow:auto;max-height:calc(70vh - 70px);scrollbar-gutter:stable both-edges}
+    .slot{padding:8px;border-radius:10px;background:rgba(255,255,255,0.01);border:1px dashed transparent}
+    .slot.drag-over{border-color:rgba(255,255,255,0.06);box-shadow:0 16px 40px rgba(8,12,20,0.5)}
+
+    .tier[data-tier="S"]{border-left:6px solid #ffd166}
+    .tier[data-tier="A"]{border-left:6px solid #ff7a7a}
+    .tier[data-tier="B"]{border-left:6px solid #6ee7b7}
+    .tier[data-tier="C"]{border-left:6px solid #8bd0ff}
+    .tier[data-tier="D"]{border-left:6px solid #b38bff}
+    .tier[data-tier="F"]{border-left:6px solid #7f7f7f}
+
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(2,6,12,0.6),rgba(2,6,12,0.8));z-index:60;padding:18px}
+    .modal.show{display:flex}
+    .modal .content{background:#071226;padding:18px;border-radius:12px;max-width:640px;width:96%;max-height:80vh;overflow:auto;color:#e9f1fb}
+
+    .player-title{font-weight:700;margin-bottom:8px}
+    .player-controls{display:flex;gap:12px;align-items:center}
+    .player-btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;cursor:pointer}
+    .time{font-size:13px;color:var(--muted);min-width:60px;text-align:center}
+    .progress{flex:1}
+    input[type=range]{width:100%}
+    .volume{width:120px}
+
+    /* Responsive tweaks */
+    @media (max-width:1100px){ .left{flex-basis:460px;width:460px} }
+    @media (max-width:880px){
+      body{padding:12px}
+      .main{flex-direction:column;height:auto}
+      .left{width:100%;flex:none;height:auto}
+      .right{width:100%}
+      .tier-board{flex-wrap:wrap}
+      .library{max-height:38vh}
+    }
+
+    .media-card:focus{outline:3px solid rgba(108,92,231,0.18)}
+    .fade-in{animation:fade .35s ease both}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>TIERMAKER — Local Audio & Video Tier List</h1>
+      <div class="subtitle">Upload a folder (audio & mp4). Files are read-only — this app DOES NOT modify any files on disk. Drag items into tiers and play only when you press play.</div>
+    </div>
+    <div class="controls">
+      <label class="btn" for="folderInput">Upload folder</label>
+      <input id="folderInput" type="file" webkitdirectory directory multiple />
+      <button id="clearBtn" class="btn ghost small">Clear</button>
+      <button id="exportBtn" class="btn small">Export JSON</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="left fade-in">
+      <!-- top area: drop zone + always-visible controls (shuffle / download) -->
+      <div class="left-top">
+        <div class="drop-zone" id="dropZone">Drop a folder here or click "Upload folder"</div>
+
+        <!-- kept above the scrollable library so they never scroll out of view -->
+        <div class="left-controls" aria-hidden="false">
+          <div class="badge" id="countBadge" style="color:var(--muted)">0 items</div>
+          <div class="left-actions">
+            <button id="shuffleBtn" class="btn ghost small">Shuffle</button>
+            <button id="downloadBoardBtn" class="btn ghost small">Download Board</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- scrollable library (this must scroll) -->
+      <div class="library" id="library" aria-live="polite" role="list"></div>
+    </aside>
+
+    <section class="right">
+      <div class="board-top" style="margin-bottom:8px">
+        <div style="color:var(--muted)"><strong>Tierboard</strong> — drag cards from the left into tiers</div>
+        <div style="color:var(--muted);font-size:13px">Play only when you press the <em>Play</em> button</div>
+      </div>
+
+      <div class="tier-board" id="tierBoard" role="listbox" aria-label="Tierboard"></div>
+    </section>
+  </div>
+
+  <div class="modal" id="previewModal"><div class="content" id="previewContent"></div></div>
+
+  <script>
+    const tierNames = ['S','A','B','C','D','F'];
+    const filesMap = new Map();
+    const library = document.getElementById('library');
+    const folderInput = document.getElementById('folderInput');
+    const dropZone = document.getElementById('dropZone');
+    const tierBoard = document.getElementById('tierBoard');
+    const countBadge = document.getElementById('countBadge');
+    const previewModal = document.getElementById('previewModal');
+    const previewContent = document.getElementById('previewContent');
+    let currentPlayerMedia = null;
+
+    function createTiers(){
+      tierBoard.innerHTML = '';
+      for(const t of tierNames){
+        const col = document.createElement('div');
+        col.className = 'tier';
+        col.dataset.tier = t;
+        const h = document.createElement('h3'); h.textContent = t; col.appendChild(h);
+        const list = document.createElement('div'); list.className = 'slot-list'; list.dataset.tier = t;
+
+        // dragging
+        list.addEventListener('dragover', e=>{ e.preventDefault(); list.classList.add('drag-over'); });
+        list.addEventListener('dragleave', e=>{ list.classList.remove('drag-over'); });
+        list.addEventListener('drop', e=>{
+          e.preventDefault();
+          list.classList.remove('drag-over');
+          const id = e.dataTransfer.getData('text/plain'); if(!id) return;
+          const node = document.querySelector(`[data-id="${id}"]`);
+          if(node){
+            list.appendChild(node);
+            if(filesMap.has(id)) filesMap.get(id).tier = t;
+            removePreviewButtonFromNode(node);
+            saveState();
+          }
+        });
+
+        // explicit wheel handler for slot-list so vertical wheel always scrolls the slot list
+        list.addEventListener('wheel', (e)=>{
+          if(e.ctrlKey || e.shiftKey) return;
+          e.preventDefault();
+          list.scrollTop += e.deltaY;
+        }, { passive: false });
+
+        col.appendChild(list);
+        tierBoard.appendChild(col);
+      }
+    }
+    createTiers();
+
+    // ensure library always scrolls when wheel is used over it (even when over a media-card)
+    library.addEventListener('wheel', (e)=>{
+      if(e.ctrlKey || e.shiftKey) return;
+      // allow normal library scrolling
+      // DON'T prevent default if the browser can naturally scroll — but we keep control for consistent behavior
+      e.preventDefault();
+      library.scrollTop += e.deltaY;
+    }, { passive: false });
+
+    function formatTime(s){ if(!isFinite(s)) return '--:--'; const m=Math.floor(s/60); const sec=Math.floor(s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
+    function stopAllExcept(current){ document.querySelectorAll('audio,video').forEach(media=>{ if(media !== current){ try{ media.pause(); }catch(e){} } }); if(currentPlayerMedia && currentPlayerMedia !== current){ try{ currentPlayerMedia.pause(); }catch(e){} } }
+
+    function addFile(file, isPlaceholder = false){
+      const name = file.name || 'unknown';
+      if(!isPlaceholder && !file.type.startsWith('audio') && !(file.type.startsWith('video') || name.toLowerCase().endsWith('.mp4'))) return;
+
+      const id = 'f_'+Math.random().toString(36).slice(2,9);
+      const url = isPlaceholder ? null : URL.createObjectURL(file);
+      const item = {id,file:url?file:null,url,duration:null,name,isPlaceholder,type: file.type || '' ,tier:null};
+      filesMap.set(id,item);
+
+      const el = document.createElement('div'); el.className='media-card'; el.draggable=true; el.dataset.id = id; el.tabIndex=0;
+      el.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', id); });
+
+      const thumb = document.createElement('div'); thumb.className='thumb'; thumb.textContent = name.slice(0,2).toUpperCase();
+      const meta = document.createElement('div'); meta.className='meta';
+      const title = document.createElement('div'); title.className='title'; title.textContent = name;
+      const info = document.createElement('div'); info.className='info'; info.textContent = isPlaceholder ? 'Placeholder — reupload to enable playback' : 'Loading...';
+      meta.appendChild(title); meta.appendChild(info);
+
+      const actions = document.createElement('div'); actions.className='actions';
+      const playBtn = document.createElement('button'); playBtn.className='play-btn'; playBtn.innerHTML='► Play';
+      const previewBtn = document.createElement('button'); previewBtn.className='preview-btn'; previewBtn.innerHTML='Preview';
+      actions.appendChild(playBtn); actions.appendChild(previewBtn);
+
+      el.appendChild(thumb); el.appendChild(meta); el.appendChild(actions);
+      library.appendChild(el);
+
+      let media = null;
+      if(!isPlaceholder){
+        if(file.type.startsWith('audio')) media = document.createElement('audio');
+        else media = document.createElement('video');
+        media.src = URL.createObjectURL(file);
+        media.preload = 'metadata';
+
+        media.addEventListener('loadedmetadata', ()=>{ item.duration = media.duration; info.textContent = formatTime(media.duration) + ' • ' + (file.type.split('/')[0] || 'media'); saveState(); });
+
+        media.addEventListener('play', ()=>{ playBtn.innerHTML='❚❚ Pause'; });
+        media.addEventListener('pause', ()=>{ playBtn.innerHTML='► Play'; });
+        media.addEventListener('ended', ()=>{ playBtn.innerHTML='► Play'; });
+
+        playBtn.addEventListener('click', ()=>{
+          if(media.paused){ stopAllExcept(media); media.play(); } else { media.pause(); }
+        });
+
+        previewBtn.addEventListener('click', ()=> openCustomPlayer(media, name, playBtn));
+
+        // CARD-level wheel: ONLY intercept when Shift (seek) or Ctrl (volume); otherwise allow library/slot-list scrolling
+        el.addEventListener('wheel', (e) => {
+          if(e.ctrlKey || e.shiftKey){
+            e.preventDefault();
+            if(e.ctrlKey){
+              const delta = -Math.sign(e.deltaY) * 0.05;
+              media.volume = Math.min(1, Math.max(0, (media.volume || 1) + delta));
+              info.textContent = `Vol ${Math.round(media.volume*100)}% • ${isFinite(media.duration)?formatTime(media.currentTime):''}`;
+            } else if(e.shiftKey){
+              const step = 5;
+              if(isFinite(media.duration)){
+                media.currentTime = Math.min(media.duration, Math.max(0, media.currentTime + (e.deltaY < 0 ? step : -step)));
+                info.textContent = formatTime(media.currentTime) + ' • ' + (file.type.split('/')[0] || 'media');
+              }
+            }
+          } else {
+            // plain wheel -> do nothing here so library's wheel handler will scroll
+          }
+        }, { passive: false });
+
+        el.title = 'Scroll: scroll list. Shift+Scroll: seek ±5s. Ctrl+Scroll: change volume.';
+      } else {
+        playBtn.disabled=true; playBtn.title='Re-upload the file to play';
+        playBtn.innerHTML='Unavailable';
+        previewBtn.addEventListener('click', ()=>{ alert('Placeholder — reupload original folder to enable playback.'); });
+      }
+
+      // double click -> assign to first tier and remove preview button
+      el.addEventListener('dblclick', ()=>{
+        const firstSlot = document.querySelector('.slot-list'); if(firstSlot){ firstSlot.appendChild(el); item.tier = firstSlot.dataset.tier; removePreviewButtonFromNode(el); saveState(); }
+      });
+
+      el.addEventListener('click', ()=>{ document.querySelectorAll('.media-card').forEach(c=>c.style.outline=''); el.style.outline='2px solid rgba(255,255,255,0.04)'; window.focusedId = id; });
+
+      updateCount(); saveState();
+    }
+
+    function removePreviewButtonFromNode(node){
+      const previewBtn = node.querySelector('.preview-btn');
+      if(previewBtn) previewBtn.remove();
+    }
+
+    function handleFilesList(fileList){
+      const arr = Array.from(fileList).filter(f=>f && (f.type.startsWith('audio') || f.type.startsWith('video') || f.name.toLowerCase().endsWith('.mp4'))).sort((a,b)=>a.name.localeCompare(b.name));
+      arr.forEach(f=>addFile(f));
+    }
+
+    folderInput.addEventListener('change', e=>{ handleFilesList(e.target.files); folderInput.value=''; });
+
+    dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.style.borderColor='rgba(255,255,255,0.06)'; });
+    dropZone.addEventListener('dragleave', e=>{ dropZone.style.borderColor=''; });
+    dropZone.addEventListener('drop', e=>{ e.preventDefault(); dropZone.style.borderColor=''; const items = e.dataTransfer.files; if(items && items.length) handleFilesList(items); });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ if(!confirm('Clear all loaded items and tiers?')) return; filesMap.forEach((v,k)=>{ if(v.url) try{ URL.revokeObjectURL(v.url); }catch(e){} }); filesMap.clear(); library.innerHTML=''; document.querySelectorAll('.slot-list').forEach(s=>s.innerHTML=''); updateCount(); saveState(); });
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const out = [];
+      filesMap.forEach((v,k)=> out.push({id:k,name:v.name,tier:v.tier || null,duration:v.duration || null}));
+      const blob = new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tierlist.json'; a.click();
+    });
+
+    document.getElementById('shuffleBtn').addEventListener('click', ()=>{
+      const nodes = Array.from(library.children); for(let i=nodes.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); library.appendChild(nodes[j]); nodes.splice(j,1); }
+    });
+
+    document.getElementById('downloadBoardBtn').addEventListener('click', ()=>{
+      const tiers = {}; document.querySelectorAll('.slot-list').forEach(s=>{ tiers[s.dataset.tier]=Array.from(s.children).map(n=>({id:n.dataset.id,name:n.querySelector('.title').textContent})); });
+      const blob = new Blob([JSON.stringify(tiers,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tierboard.json'; a.click();
+    });
+
+    previewModal.addEventListener('click', e=>{ if(e.target===previewModal) closePlayer(); });
+
+    function saveState(){
+      try{
+        const state = {items:[]}; filesMap.forEach((v,k)=> state.items.push({id:k,name:v.name,tier:v.tier||null,duration:v.duration||null}));
+        document.querySelectorAll('.slot-list').forEach(list=>{ state[list.dataset.tier]=Array.from(list.children).map(n=>n.dataset.id); });
+        localStorage.setItem('tiermaker_state_v2', JSON.stringify(state));
+      }catch(e){console.warn('save failed',e)}
+    }
+
+    function restoreStateOnLoad(){
+      const raw = localStorage.getItem('tiermaker_state_v2'); if(!raw) return;
+      try{
+        const state = JSON.parse(raw);
+        if(state.items && state.items.length){
+          state.items.forEach(it=>{ addFile(new File([''], it.name, {type:'audio/mpeg'}), true); });
+          const ids = Array.from(filesMap.keys()); let i=0; for(const t of tierNames){ if(state[t]){ const slot=document.querySelector(`.slot-list[data-tier="${t}"]`); state[t].forEach(_id=>{ const node = document.querySelector(`[data-id="${ids[i]}"]`); if(node && slot) { slot.appendChild(node); removePreviewButtonFromNode(node); } i++; }); } }
+        }
+      }catch(e){console.warn('restore failed',e)}
+    }
+
+    function updateCount(){ countBadge.textContent = filesMap.size + ' items'; }
+
+    document.addEventListener('keydown', e=>{
+      const focusedId = window.focusedId; if(!focusedId) return; const item = filesMap.get(focusedId); if(!item) return; const idx = tierNames.indexOf(item.tier);
+      if(e.key === 'ArrowRight'){ const newT = tierNames[Math.min(tierNames.length-1, (idx===-1?0:idx+1))]; const slot = document.querySelector(`.slot-list[data-tier="${newT}"]`); const node = document.querySelector(`[data-id="${focusedId}"]`); if(slot && node){ slot.appendChild(node); item.tier=newT; removePreviewButtonFromNode(node); saveState(); } }
+      if(e.key === 'ArrowLeft'){ const newT = tierNames[Math.max(0, (idx===-1?0:idx-1))]; const slot = document.querySelector(`.slot-list[data-tier="${newT}"]`); const node = document.querySelector(`[data-id="${focusedId}"]`); if(slot && node){ slot.appendChild(node); item.tier=newT; removePreviewButtonFromNode(node); saveState(); } }
+    });
+
+    window.addEventListener('keydown', e=>{ if(e.code==='Space' && document.activeElement && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') e.preventDefault(); });
+
+    // custom player
+    let playerState = {audio: null, sourceName:'', ui:{}};
+    function openCustomPlayer(mediaElement, title, libraryPlayBtn){
+      closePlayer();
+      const audio = document.createElement('audio');
+      audio.src = mediaElement.src;
+      audio.preload = 'metadata';
+      audio.volume = mediaElement.volume || 1;
+      playerState.audio = audio;
+      currentPlayerMedia = audio;
+
+      previewContent.innerHTML = '';
+
+      const heading = document.createElement('div');
+      heading.style.display='flex'; heading.style.justifyContent='space-between'; heading.style.alignItems='center'; heading.style.marginBottom='10px';
+      const titleEl = document.createElement('div'); titleEl.className='player-title'; titleEl.textContent = title;
+      const closeBtn = document.createElement('button'); closeBtn.className='btn ghost small'; closeBtn.textContent='Close'; closeBtn.addEventListener('click', closePlayer);
+      heading.appendChild(titleEl); heading.appendChild(closeBtn);
+      previewContent.appendChild(heading);
+
+      const playerBox = document.createElement('div');
+      const controls = document.createElement('div'); controls.className='player-controls';
+      const playBtn = document.createElement('button'); playBtn.className='player-btn'; playBtn.textContent = '►';
+      const currentTime = document.createElement('div'); currentTime.className='time'; currentTime.textContent='0:00';
+      const progressWrap = document.createElement('div'); progressWrap.className='progress';
+      const progress = document.createElement('input'); progress.type='range'; progress.min=0; progress.max=100; progress.value=0;
+      progressWrap.appendChild(progress);
+      const totalTime = document.createElement('div'); totalTime.className='time'; totalTime.textContent='--:--';
+      const volumeWrap = document.createElement('div'); volumeWrap.className='volume';
+      const volume = document.createElement('input'); volume.type='range'; volume.min=0; volume.max=1; volume.step=0.01; volume.value=audio.volume;
+      volumeWrap.appendChild(volume);
+
+      controls.appendChild(playBtn);
+      controls.appendChild(currentTime);
+      controls.appendChild(progressWrap);
+      controls.appendChild(totalTime);
+      controls.appendChild(volumeWrap);
+
+      playerBox.appendChild(controls);
+      const tip = document.createElement('div'); tip.style.color='var(--muted)'; tip.style.fontSize='13px'; tip.style.marginTop='8px';
+      tip.textContent = 'Shift + wheel on a card to seek ±5s. Ctrl + wheel to change volume. In this player: wheel over timeline to seek; Ctrl+wheel for volume.';
+      previewContent.appendChild(playerBox);
+      previewContent.appendChild(tip);
+
+      playBtn.addEventListener('click', ()=>{ if(audio.paused) { stopAllExcept(audio); audio.play(); } else audio.pause(); });
+
+      audio.addEventListener('play', ()=>{ playBtn.textContent='❚❚'; if(libraryPlayBtn) libraryPlayBtn.innerHTML='❚❚ Pause'; });
+      audio.addEventListener('pause', ()=>{ playBtn.textContent='►'; if(libraryPlayBtn) libraryPlayBtn.innerHTML='► Play'; });
+      audio.addEventListener('timeupdate', ()=>{ currentTime.textContent = formatTime(audio.currentTime); if(isFinite(audio.duration) && audio.duration>0) progress.value = (audio.currentTime / audio.duration) * 100; });
+      audio.addEventListener('loadedmetadata', ()=>{ totalTime.textContent = formatTime(audio.duration); if(isFinite(audio.duration) && audio.duration>0) progress.disabled = false; else progress.disabled = true; });
+      audio.addEventListener('ended', ()=>{ playBtn.textContent='►'; if(libraryPlayBtn) libraryPlayBtn.innerHTML='► Play'; });
+
+      progress.addEventListener('input', ()=>{ if(isFinite(audio.duration) && audio.duration>0){ const pct = Number(progress.value)/100; audio.currentTime = audio.duration * pct; } });
+
+      progress.addEventListener('wheel', (e)=>{
+        e.preventDefault();
+        if(e.ctrlKey){
+          const delta = -Math.sign(e.deltaY) * 0.05;
+          audio.volume = Math.min(1, Math.max(0, audio.volume + delta));
+          volume.value = audio.volume;
+        } else {
+          const step = audio.duration ? Math.max(1, Math.round(audio.duration * 0.01)) : 5;
+          audio.currentTime = Math.min(audio.duration || 0, Math.max(0, audio.currentTime + (e.deltaY < 0 ? step : -step)));
+        }
+      }, { passive: false });
+
+      volume.addEventListener('input', ()=>{ audio.volume = Number(volume.value); });
+
+      previewContent.addEventListener('wheel', (e)=>{
+        if(previewModal.classList.contains('show')){
+          e.preventDefault();
+          if(e.ctrlKey){
+            const delta = -Math.sign(e.deltaY) * 0.05;
+            audio.volume = Math.min(1, Math.max(0, audio.volume + delta));
+            volume.value = audio.volume;
+          } else {
+            const step = 5;
+            if(isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, Math.max(0, audio.currentTime + (e.deltaY < 0 ? step : -step)));
+          }
+        }
+      }, { passive:false });
+
+      playerState.ui = {audio, playBtn, progress, volume, currentTime, totalTime};
+
+      previewModal.classList.add('show');
+      audio.play().catch(()=>{});
+    }
+
+    function closePlayer(){
+      previewModal.classList.remove('show');
+      if(playerState && playerState.ui && playerState.ui.audio){
+        try{ playerState.ui.audio.pause(); }catch(e){}
+      }
+      playerState = {audio:null, sourceName:'', ui:{}};
+      currentPlayerMedia = null;
+      previewContent.innerHTML = '';
+    }
+
+    window.addEventListener('load', ()=>{ dropZone.animate([{opacity:1},{opacity:0.7},{opacity:1}],{duration:1200,iterations:1}); restoreStateOnLoad(); });
+
+  </script>
+</body>
+</html>
